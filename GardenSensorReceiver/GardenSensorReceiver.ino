@@ -2,6 +2,9 @@
 #include <LiquidCrystal.h>
 #include <SPI.h> // Not actually used but needed to compile
 
+#define HUM_SENSOR_WET 80
+#define HUM_SENSOR_DRY 160
+
 RH_ASK driver;
 LiquidCrystal lcd(7, 8, 9, 10, 6 , 12);
 int i = 0;
@@ -49,4 +52,11 @@ void loop()
     lcd.write({ta});
 
   }
+}
+
+uint8_t get_calibrated_humidity(uint8_t sens_val) {
+  uint8_t range = HUM_SENSOR_DRY - HUM_SENSOR_WET;
+  uint8_t how_wet = HUM_SENSOR_DRY - sens_val;
+  uint8_t percent = how_wet * 100 / range;
+  return percent;
 }
