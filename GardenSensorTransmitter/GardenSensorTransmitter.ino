@@ -2,7 +2,8 @@
 #include <SPI.h> // Not actually used but needed to compile
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#define ONE_WIRE_BUS 4
+
+#define ONE_WIRE_BUS 14
 
 RH_ASK driver;
 OneWire oneWire(ONE_WIRE_BUS); 
@@ -11,7 +12,6 @@ DeviceAddress tempDeviceAddress; // We'll use this variable to store a found dev
 
 int numberOfDevices; // Number of temperature devices found
 
- 
 void setup()
 {
   Serial.begin(9600);    // Debugging only
@@ -22,24 +22,36 @@ void setup()
   sensors.begin(); // Start up the library
   numberOfDevices = sensors.getDeviceCount();   // Grab a count of devices on the wire
 
-  uint8_t test[2];
-  get_temperatures(test);
+  Serial.println("Done setup");
 }
 
 void loop()
 {
+  // Read humidity sensor
+  int hum_sens_val = analogRead(A1);
+  uint8_t hum_byte = (hum_sens_val + 1) / 4 - 1; //converting to byte (1023 -> 255)
 
-  int val;
-  val = analogRead(A0); //connect sensor to Analog 0 Serial.print(val); //print the value to serial port delay(100);
-  uint8_t val_byte = (val + 1) / 4 - 1; //converting to byte (1023 -> 255)
+  // If it's 255 that means it looped around
+  if (hum_byte == 255) {
+    hum_byte = 0;
+  }
 
-  //const char *msg = "Hello 499 :)";
-  const uint8_t msg[12] = {val_byte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //transmitter sends 12 bytes so only using the first value in this case
+  uint8_t temps[2] = {0, 0};
+  get_temperatures(temps);
 
+  Serial.print("Humidity: ");
+  Serial.println(hum_byte);
+  Serial.print("Temp1: ");
+  Serial.println(temps[0]);
+  Serial.print("Temp2: ");
+  Serial.println(temps[1]);
 
+  const uint8_t msg[12] = {hum_byte, temps[0], temps[1], 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  
   driver.send((uint8_t *)msg, strlen(msg));
   driver.waitPacketSent();
-  delay(1000);
+  
+  delay(5000);
 }
 
 void get_temperatures(uint8_t* values)
